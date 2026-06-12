@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CryptoChat & Games - التطبيق الرسمي</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
         body { background-color: #0b0e11; color: #eaecef; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
@@ -15,20 +18,17 @@
         .btn-connect { background-color: #f3ba2f; color: #000000; border: none; padding: 14px 28px; font-size: 1.1rem; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.3s; }
         .btn-connect:hover { background-color: #fdd05b; }
         
-        /* شاشة الشات والالعاب */
         .chat-container { display: none; width: 100%; height: 100vh; grid-template-columns: 320px 1fr; }
         .sidebar { background-color: #151a21; border-left: 1px solid #212833; display: flex; flex-direction: column; }
         .sidebar-header { padding: 20px; background-color: #1e2530; font-weight: bold; border-bottom: 1px solid #212833; color: #f3ba2f; text-align: center; }
         .wallet-list { list-style: none; overflow-y: auto; flex: 1; }
         .wallet-item { padding: 15px 20px; border-bottom: 1px solid #1e2530; font-size: 0.85rem; color: #ffffff; text-align: center; font-weight: bold; }
         
-        /* شريط الألعاب المدمج في القائمة الجانبية */
         .sidebar-games-box { padding: 15px; background: #1e2530; border-bottom: 1px solid #212833; display: flex; flex-direction: column; gap: 8px; }
         .sidebar-games-box label { font-size: 0.85rem; color: #f3ba2f; text-align: center; font-weight: bold; margin-bottom: 2px; }
         .btn-game { background-color: #212833; color: #ffffff; border: 1px solid #4f5d73; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; transition: 0.2s; text-align: center; }
         .btn-game:hover { background-color: #2b3542; border-color: #f3ba2f; color: #f3ba2f; }
 
-        /* صندوق الإيداع الأصلي المرتجع */
         .sidebar-deposit-box { padding: 20px 15px; background: #1e2530; border-top: 1px solid #212833; display: flex; flex-direction: column; gap: 10px; }
         .sidebar-deposit-box label { font-size: 0.85rem; color: #00ff88; text-align: center; font-weight: bold; }
         .sidebar-deposit-box input { background: #0b0e11; border: 1px solid #2b3542; padding: 10px; border-radius: 6px; color: white; text-align: center; outline: none; font-size: 1rem; }
@@ -78,7 +78,7 @@
 
     <div class="login-container" id="loginScreen">
         <div class="logo">CryptoChat</div>
-        <div class="tagline">تراسل آمن وجاد يدعمه عقد عملة SINU الذكي</div>
+        <div class="tagline">تراسل آمن وجاد يدعمه عقد عملة SINU الذكي وقاعدة بيانات هجينة</div>
         <button class="btn-connect" onclick="connectWallet()">ربط المحفظة الحقيقية</button>
     </div>
 
@@ -105,14 +105,12 @@
         
         <div class="main-chat">
             <div class="navigation-tabs">
-                <button class="tab-btn active" id="tabGroup" onclick="switchChatMode('group')">المنشورات العامة 🌐 (دائمة للجميع)</button>
-                <button class="tab-btn" id="tabPrivate" onclick="switchChatMode('private')">المراسلة الخاصة 🔒 (مشفرة وعقد ذكي)</button>
+                <button class="tab-btn active" id="tabGroup" onclick="switchChatMode('group')">المنشورات العامة 🌐 (قاعدة بيانات مجانية)</button>
+                <button class="tab-btn" id="tabPrivate" onclick="switchChatMode('private')">المراسلة الخاصة 🔒 (خصم عبر العقد)</button>
             </div>
 
             <div class="chat-header" id="chatHeader">المحادثة النشطة | جاري تحميل البيانات...</div>
-            <div class="messages-area" id="messagesArea">
-                <div class="message received">مرحباً بك مجدداً! تم دمج رصيد التعبئة مع ساحة الألعاب وحفظ دوال العقد بنجاح لتعمل معاً.</div>
-            </div>
+            <div class="messages-area" id="messagesArea"></div>
             
             <div class="input-area-wrapper">
                 <div class="recipient-row" id="recipientRow">
@@ -139,21 +137,38 @@
     </div>
 
     <script>
+        // تكوين الـ Firebase الخاص بك (استبدل هذه البيانات ببيانات مشروعك الخاصة)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        // تشغيل مكتبة الفايربيس للعمل الفوري في الموقع
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         const chatContractAddress = "0x690192AEeE16c40f6f7d0CA30BAA1B0884259068"; 
         const sinuTokenAddress = "0x56bB247c424958948B63de291A0C7f45d8651B76"; 
 
-        // تم تحديث الـ ABI ليتطابق مع نسختك البرمجية الذكية الأخيرة
+        // متوافق تماماً وبنسبة 100% مع الـ ABI الخاص بعقدك الحالي المرفوع بدون دوال العام
         const chatAbi = [
             "constructor(address _sinuTokenAddress)",
             "function costImage() view returns (uint256)",
             "function costText() view returns (uint256)",
             "function costVoice() view returns (uint256)",
             "function deductForService(address _user, uint256 _serviceType)",
-            "function depositSinu(uint256 _amount)",
+            "function depositSinu(uint256 _amountWithDecimals)",
             "function getInAppBalance(address _user) view returns (uint256)",
-            "function updatePrices(uint256 _text, uint256 _image, uint256 _voice)",
-            "function broadcastMessage(string memory _content, uint256 _type) external",
-            "function getPublicMessages() view returns (string[] memory, uint256[] memory, address[] memory)"
+            "function owner() view returns (address)",
+            "function sinuToken() view returns (address)",
+            "function totalOwnerEarnings() view returns (uint256)",
+            "function updatePrices(uint256 _textWei, uint256 _imageWei, uint256 _voiceWei)",
+            "function withdrawEarnings()"
         ];
 
         const tokenAbi = [
@@ -188,7 +203,9 @@
                     document.getElementById('activeWalletLabel').innerText = userAddress.substring(0, 6) + "..." + userAddress.substring(38);
 
                     await refreshUserData();
-                    await loadOnChainMessages(); 
+                    
+                    // الاستماع للمنشورات العامة في الفايربيس (جلب فوري ومستمر لكل الناس)
+                    listenToPublicMessages();
 
                     document.getElementById('loginScreen').style.display = 'none';
                     document.getElementById('chatScreen').style.display = 'grid';
@@ -196,17 +213,16 @@
                     updateHeaderDisplay();
                 } catch (error) {
                     console.error(error);
-                    alert("فشل ربط وتأكيد البيانات: " + error.message);
+                    alert("فشل ربط البيانات: " + error.message);
                 }
             } else {
-                alert("يرجى فتح التطبيق من متصفح محفظة العملات المشفرة الحقيقية!");
+                alert("يرجى فتح التطبيق من متصفح محفظة العملات المعتمدة!");
             }
         }
 
         async function refreshUserData() {
             if (!chatContract || !userAddress) return;
             try {
-                // دالة getInAppBalance ترجع رقم مخصوم منه الـ 18 صفر تلقائياً من العقد
                 const rawBalance = await chatContract.getInAppBalance(userAddress);
                 inAppBalance = parseInt(rawBalance.toString());
 
@@ -214,7 +230,6 @@
                 const cImage = await chatContract.costImage();
                 const cVoice = await chatContract.costVoice();
                 
-                // نقسم الأسعار العامة القادمة من العقد لنعرضها للمستخدم بشكل طبيعي (300، 500..)
                 priceText = parseFloat(ethers.utils.formatEther(cText));
                 priceImage = parseFloat(ethers.utils.formatEther(cImage));
                 priceVoice = parseFloat(ethers.utils.formatEther(cVoice));
@@ -224,19 +239,12 @@
             updateHeaderDisplay();
         }
 
-        async function loadOnChainMessages() {
-            try {
-                if(chatContract.getPublicMessages) {
-                    const [contents, types, senders] = await chatContract.getPublicMessages();
-                    const area = document.getElementById('messagesArea');
-                    
-                    for(let i=0; i<contents.length; i++) {
-                        displayMessageInUI(parseInt(types[i]), contents[i], senders[i] === userAddress, senders[i]);
-                    }
-                }
-            } catch (e) {
-                console.log("وضع المحاكاة النشط للمنشورات العادية.");
-            }
+        // دالة فايربيس السحرية: تجلب كل الرسائل السابقة وتراقب أي منشور جديد فوراً بدون تحديث الصفحة
+        function listenToPublicMessages() {
+            db.ref("public_messages").on("child_added", (snapshot) => {
+                const data = snapshot.val();
+                displayMessageInUI(data.type, data.content, data.sender.toLowerCase() === userAddress.toLowerCase(), data.sender, true);
+            });
         }
 
         async function handleUIDeposit() {
@@ -245,13 +253,11 @@
             if(!val || parseFloat(val) <= 0) return alert("يرجى كتابة كمية شحن صالحة!");
             
             try {
-                // الـ Token يحتاج دائمًا لموافقة (Approve) بقيمة الـ Wei كاملة بالأصفار
                 const amountWei = ethers.utils.parseEther(val);
                 const approveTx = await tokenContract.approve(chatContractAddress, amountWei);
                 await approveTx.wait();
                 
-                // عقدك الجديد يأخذ الرقم العادي (مثل 100) ويضربه بالداخل، لذلك نرسل له الرقم الصافي
-                const depositTx = await chatContract.depositSinu(parseInt(val));
+                const depositTx = await chatContract.depositSinu(amountWei);
                 await depositTx.wait();
                 
                 alert("تم شحن الرصيد بنجاح! 🎉");
@@ -264,15 +270,21 @@
         function switchChatMode(mode) {
             isGroupChat = (mode === 'group');
             const recipientRow = document.getElementById('recipientRow');
+            document.getElementById('messagesArea').innerHTML = ""; // تنظيف الشاشة عند التنقل
             
             if (isGroupChat) {
                 document.getElementById('tabGroup').classList.add('active');
                 document.getElementById('tabPrivate').classList.remove('active');
                 recipientRow.style.display = 'none'; 
+                listenToPublicMessages(); // إعادة تفعيل جلب العام
             } else {
                 document.getElementById('tabGroup').classList.remove('active');
                 document.getElementById('tabPrivate').classList.add('active');
                 recipientRow.style.display = 'flex'; 
+                db.ref("public_messages").off(); // إيقاف العام مؤقتاً بالخاص
+                
+                // رسالة ترحيبية في الخاص
+                displayMessageInUI(1, "أنت الآن في قسم الرسائل الخاصة الآمنة، سيتم الخصم من رصيدك في العقد تلقائياً عند الإرسال.", false, "نظام الحماية", false);
             }
             updateHeaderDisplay();
         }
@@ -282,10 +294,10 @@
             if (!header) return;
             
             if (isGroupChat) {
-                header.innerHTML = `ساحة المنشورات العامة 🌐 | <span style="color: #00ff88; font-weight: bold;">تُعرض للجميع وبشكل دائم</span> | رصيدك: ${inAppBalance} SINU`;
+                header.innerHTML = `ساحة المنشورات العامة 🌐 | <span style="color: #00ff88; font-weight: bold;">مجانية وسريعة للجميع عبر قاعدة البيانات</span> | رصيدك: ${inAppBalance} SINU`;
             } else {
                 header.innerHTML = `المراسلة الخاصة الآمنة 🔒 | رصيدك في العقد: <span style="color:#00ff88; font-weight:bold;">${inAppBalance} SINU</span><br>
-                <small style="color:#f3ba2f; font-weight: bold;">التكلفة: نص ${priceText} | صورة ${priceImage} | صوت ${priceVoice} SINU</small>`;
+                <small style="color:#f3ba2f; font-weight: bold;">تكلفة الاستهلاك: نص ${priceText} | صورة ${priceImage} | صوت ${priceVoice} SINU</small>`;
             }
         }
 
@@ -366,15 +378,16 @@
             if (text === "") return;
 
             if (isGroupChat) {
-                try {
-                    if(chatContract.broadcastMessage) {
-                        const tx = await chatContract.broadcastMessage(text, serviceType);
-                        await tx.wait(); 
-                    }
-                } catch (err) {
-                    console.log("تم الإرسال للعرض الفوري بنجاح.");
-                }
+                // حفظ المنشور في قاعدة بيانات Firebase مجاناً وبدون غاز ليراه الجميع فوراً
+                db.ref("public_messages").push({
+                    sender: userAddress,
+                    content: text,
+                    type: serviceType,
+                    timestamp: Date.now()
+                });
+                if (serviceType === 1) input.value = "";
             } else {
+                // التعامل مع القسم الخاص المدفوع عبر العقد الذكي
                 const recipient = recipientInput.value.trim();
                 if (recipient === "" || !recipient.startsWith("0x") || recipient.length !== 42) {
                     return alert("يرجى إدخال عنوان محفظة مستلم صحيح!");
@@ -385,36 +398,40 @@
                 if (serviceType === 3) currentCost = parseFloat(priceVoice);
 
                 if (inAppBalance < currentCost) {
-                    alert(`رصيدك المودع غير كافٍ! تحتاج إلى ${currentCost} SINU.`);
+                    alert(`رصيدك غير كافٍ! تحتاج إلى ${currentCost} SINU.`);
                     return;
                 }
                 
                 try {
+                    // المالك (أو السيرفر) يستدعي دالة الخصم من المستخدم لإتمام الخدمة
                     const tx = await chatContract.deductForService(userAddress, serviceType);
                     await tx.wait();
                     inAppBalance -= currentCost;
                     updateHeaderDisplay();
+                    
+                    displayMessageInUI(serviceType, text, true, userAddress, false);
+                    if (serviceType === 1) input.value = "";
                 } catch(e) {
-                    inAppBalance -= currentCost;
-                    updateHeaderDisplay();
+                    alert("فشل تأكيد المعاملة البرمجية: " + e.message);
                 }
             }
-
-            displayMessageInUI(serviceType, text, true, userAddress);
-            if (serviceType === 1) input.value = "";
         }
 
-        function displayMessageInUI(serviceType, content, isSent, senderAddress) {
+        function displayMessageInUI(serviceType, content, isSent, senderAddress, isPublicMsg) {
             const area = document.getElementById('messagesArea');
             const msgDiv = document.createElement('div');
             msgDiv.className = isSent ? 'message sent' : 'message received';
             
-            msgDiv.style.borderLeft = isGroupChat ? "4px solid #00ff88" : "4px solid #f3ba2f";
-            const shortSender = senderAddress.substring(0, 6) + "..." + senderAddress.substring(38);
+            msgDiv.style.borderLeft = isPublicMsg ? "4px solid #00ff88" : "4px solid #f3ba2f";
+            
+            let shortSender = senderAddress;
+            if(senderAddress.startsWith("0x")) {
+                shortSender = senderAddress.substring(0, 6) + "..." + senderAddress.substring(38);
+            }
             
             const titleSpan = document.createElement('small');
             titleSpan.style.cssText = "color:#aaa; display:block; margin-bottom:4px; font-weight:bold; font-size:0.75rem;";
-            titleSpan.innerText = isGroupChat ? `🌐 منشور من: ${shortSender}` : `🔒 رسالة خاصة`;
+            titleSpan.innerText = isPublicMsg ? `🌐 منشور عام من: ${shortSender}` : `🔒 رسالة خاصة`;
             msgDiv.appendChild(titleSpan);
 
             if (serviceType === 1) {
