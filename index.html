@@ -44,7 +44,7 @@
         .chat-header { padding: 15px 20px; background-color: #151a21; border-bottom: 1px solid #212833; font-size: 0.95rem; color: #ffffff; line-height: 1.5; }
         .messages-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
         
-        .message { max-width: 70%; padding: 12px 16px; border-radius: 12px; font-size: 0.95rem; display: flex; flex-direction: column; gap: 5px; line-height: 1.4; }
+        .message { max-width: 70%; padding: 12px 16px; border-radius: 12px; font-size: 0.95rem; display: flex; flex-direction: column; gap: 5px; line-height: 1.4; position: relative; }
         .message.sent { background-color: #f3ba2f; color: #000000; align-self: flex-start; border-top-right-radius: 0; }
         .message.received { background-color: #1e2530; color: #eaecef; align-self: flex-end; border-top-left-radius: 0; }
         .message img { max-width: 100%; max-height: 250px; border-radius: 8px; margin-top: 5px; object-fit: cover; }
@@ -65,12 +65,7 @@
         
         .btn-send { background-color: #f3ba2f; color: #000000; border: none; padding: 0 24px; height: 48px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         @media (max-width: 768px) { .chat-container { grid-template-columns: 1fr; } .sidebar { display: none; } }
     </style>
 </head>
@@ -78,7 +73,7 @@
 
     <div class="login-container" id="loginScreen">
         <div class="logo">CryptoChat</div>
-        <div class="tagline">تراسل آمن وجاد يدعمه عقد عملة SINU الذكي وقاعدة بيانات هجينة</div>
+        <div class="tagline">تراسل آمن وجاد يدعمه عقد عملة SINU الذكي وقاعدة بيانات هجينة تتيح تعديل وحذف منشوراتك</div>
         <button class="btn-connect" onclick="connectWallet()">ربط المحفظة الحقيقية</button>
     </div>
 
@@ -137,29 +132,23 @@
     </div>
 
     <script>
-        // تكوين الـ Firebase الخاص بك (استبدل هذه البيانات ببيانات مشروعك الخاصة)
-
-        // تكوين الـ Firebase الخاص بك (تم التحديث ببياناتك الحقيقية ورابط قاعدة البيانات)
-
-        // تكوين الـ Firebase الخاص بك (تم دمج بياناتك المستخرجة بنجاح)
-     const firebaseConfig = {
-           apiKey: "AIzaSyAjANzHrD-JEEN_4DVIY705ECcJTvl4lQk",
-           authDomain: "kriptochat-bf77a.firebaseapp.com",
-           databaseURL: "https://kriptochat-bf77a-default-rtdb.firebaseio.com", // الرابط السري لقاعدتك العامة
-           projectId: "kriptochat-bf77a",
-           storageBucket: "kriptochat-bf77a.firebasestorage.app",
-          messagingSenderId: "438561797154",
-          appId: "1:438561797154:web:26e5b2eda081e0eac2467b"
+        // إدخال بيانات الربط الخاصة بمشروعك (تم دمج رابط قاعدة البيانات الخاص بك بنجاح)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjANzHrD-JEEN_4DVIY705ECcJTvl4lQk",
+            authDomain: "kriptochat-bf77a.firebaseapp.com",
+            databaseURL: "https://kriptochat-bf77a-default-rtdb.firebaseio.com", 
+            projectId: "kriptochat-bf77a",
+            storageBucket: "kriptochat-bf77a.firebasestorage.app",
+            messagingSenderId: "438561797154",
+            appId: "1:438561797154:web:26e5b2eda081e0eac2467b"
         };
         
-        // تشغيل مكتبة الفايربيس للعمل الفوري في الموقع
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         const chatContractAddress = "0x690192AEeE16c40f6f7d0CA30BAA1B0884259068"; 
         const sinuTokenAddress = "0x56bB247c424958948B63de291A0C7f45d8651B76"; 
 
-        // متوافق تماماً وبنسبة 100% مع الـ ABI الخاص بعقدك الحالي المرفوع بدون دوال العام
         const chatAbi = [
             "constructor(address _sinuTokenAddress)",
             "function costImage() view returns (uint256)",
@@ -168,11 +157,7 @@
             "function deductForService(address _user, uint256 _serviceType)",
             "function depositSinu(uint256 _amountWithDecimals)",
             "function getInAppBalance(address _user) view returns (uint256)",
-            "function owner() view returns (address)",
-            "function sinuToken() view returns (address)",
-            "function totalOwnerEarnings() view returns (uint256)",
-            "function updatePrices(uint256 _textWei, uint256 _imageWei, uint256 _voiceWei)",
-            "function withdrawEarnings()"
+            "function updatePrices(uint256 _textWei, uint256 _imageWei, uint256 _voiceWei)"
         ];
 
         const tokenAbi = [
@@ -207,8 +192,6 @@
                     document.getElementById('activeWalletLabel').innerText = userAddress.substring(0, 6) + "..." + userAddress.substring(38);
 
                     await refreshUserData();
-                    
-                    // الاستماع للمنشورات العامة في الفايربيس (جلب فوري ومستمر لكل الناس)
                     listenToPublicMessages();
 
                     document.getElementById('loginScreen').style.display = 'none';
@@ -243,11 +226,25 @@
             updateHeaderDisplay();
         }
 
-        // دالة فايربيس السحرية: تجلب كل الرسائل السابقة وتراقب أي منشور جديد فوراً بدون تحديث الصفحة
         function listenToPublicMessages() {
+            document.getElementById('messagesArea').innerHTML = ""; 
+            db.ref("public_messages").off();
+            
+            // الاستماع عند إضافة منشور جديد
             db.ref("public_messages").on("child_added", (snapshot) => {
                 const data = snapshot.val();
-                displayMessageInUI(data.type, data.content, data.sender.toLowerCase() === userAddress.toLowerCase(), data.sender, true);
+                displayMessageInUI(data.type, data.content, data.sender.toLowerCase() === userAddress.toLowerCase(), data.sender, true, snapshot.key);
+            });
+
+            // الاستماع عند تعديل منشور
+            db.ref("public_messages").on("child_changed", (snapshot) => {
+                const data = snapshot.val();
+                displayMessageInUI(data.type, data.content, data.sender.toLowerCase() === userAddress.toLowerCase(), data.sender, true, snapshot.key);
+            });
+
+            // الاستماع عند حذف منشور
+            db.ref("public_messages").on("child_removed", (snapshot) => {
+                displayMessageInUI(null, null, false, "", true, snapshot.key);
             });
         }
 
@@ -274,20 +271,18 @@
         function switchChatMode(mode) {
             isGroupChat = (mode === 'group');
             const recipientRow = document.getElementById('recipientRow');
-            document.getElementById('messagesArea').innerHTML = ""; // تنظيف الشاشة عند التنقل
+            document.getElementById('messagesArea').innerHTML = ""; 
             
             if (isGroupChat) {
                 document.getElementById('tabGroup').classList.add('active');
                 document.getElementById('tabPrivate').classList.remove('active');
                 recipientRow.style.display = 'none'; 
-                listenToPublicMessages(); // إعادة تفعيل جلب العام
+                listenToPublicMessages(); 
             } else {
                 document.getElementById('tabGroup').classList.remove('active');
                 document.getElementById('tabPrivate').classList.add('active');
                 recipientRow.style.display = 'flex'; 
-                db.ref("public_messages").off(); // إيقاف العام مؤقتاً بالخاص
-                
-                // رسالة ترحيبية في الخاص
+                db.ref("public_messages").off(); 
                 displayMessageInUI(1, "أنت الآن في قسم الرسائل الخاصة الآمنة، سيتم الخصم من رصيدك في العقد تلقائياً عند الإرسال.", false, "نظام الحماية", false);
             }
             updateHeaderDisplay();
@@ -298,7 +293,7 @@
             if (!header) return;
             
             if (isGroupChat) {
-                header.innerHTML = `ساحة المنشورات العامة 🌐 | <span style="color: #00ff88; font-weight: bold;">مجانية وسريعة للجميع عبر قاعدة البيانات</span> | رصيدك: ${inAppBalance} SINU`;
+                header.innerHTML = `ساحة المنشورات العامة 🌐 | <span style="color: #00ff88; font-weight: bold;">مجانية وسريعة للجميع (يمكنك تعديل وحذف منشوراتك)</span> | رصيدك: ${inAppBalance} SINU`;
             } else {
                 header.innerHTML = `المراسلة الخاصة الآمنة 🔒 | رصيدك في العقد: <span style="color:#00ff88; font-weight:bold;">${inAppBalance} SINU</span><br>
                 <small style="color:#f3ba2f; font-weight: bold;">تكلفة الاستهلاك: نص ${priceText} | صورة ${priceImage} | صوت ${priceVoice} SINU</small>`;
@@ -382,7 +377,6 @@
             if (text === "") return;
 
             if (isGroupChat) {
-                // حفظ المنشور في قاعدة بيانات Firebase مجاناً وبدون غاز ليراه الجميع فوراً
                 db.ref("public_messages").push({
                     sender: userAddress,
                     content: text,
@@ -391,7 +385,6 @@
                 });
                 if (serviceType === 1) input.value = "";
             } else {
-                // التعامل مع القسم الخاص المدفوع عبر العقد الذكي
                 const recipient = recipientInput.value.trim();
                 if (recipient === "" || !recipient.startsWith("0x") || recipient.length !== 42) {
                     return alert("يرجى إدخال عنوان محفظة مستلم صحيح!");
@@ -407,7 +400,6 @@
                 }
                 
                 try {
-                    // المالك (أو السيرفر) يستدعي دالة الخصم من المستخدم لإتمام الخدمة
                     const tx = await chatContract.deductForService(userAddress, serviceType);
                     await tx.wait();
                     inAppBalance -= currentCost;
@@ -421,11 +413,27 @@
             }
         }
 
-        function displayMessageInUI(serviceType, content, isSent, senderAddress, isPublicMsg) {
+        function displayMessageInUI(serviceType, content, isSent, senderAddress, isPublicMsg, messageId = null) {
             const area = document.getElementById('messagesArea');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = isSent ? 'message sent' : 'message received';
             
+            if (!content && messageId) {
+                const existingMsg = document.getElementById(`msg-${messageId}`);
+                if (existingMsg) existingMsg.remove();
+                return;
+            }
+
+            let msgDiv = document.getElementById(`msg-${messageId}`);
+            let isEdit = false;
+            
+            if (msgDiv) {
+                msgDiv.innerHTML = ""; 
+                isEdit = true;
+            } else {
+                msgDiv = document.createElement('div');
+                if (messageId) msgDiv.id = `msg-${messageId}`;
+            }
+
+            msgDiv.className = isSent ? 'message sent' : 'message received';
             msgDiv.style.borderLeft = isPublicMsg ? "4px solid #00ff88" : "4px solid #f3ba2f";
             
             let shortSender = senderAddress;
@@ -433,14 +441,49 @@
                 shortSender = senderAddress.substring(0, 6) + "..." + senderAddress.substring(38);
             }
             
+            const headerSpan = document.createElement('div');
+            headerSpan.style.cssText = "display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px; gap: 10px;";
+            
             const titleSpan = document.createElement('small');
-            titleSpan.style.cssText = "color:#aaa; display:block; margin-bottom:4px; font-weight:bold; font-size:0.75rem;";
+            titleSpan.style.cssText = "color:#aaa; font-weight:bold; font-size:0.75rem;";
             titleSpan.innerText = isPublicMsg ? `🌐 منشور عام من: ${shortSender}` : `🔒 رسالة خاصة`;
-            msgDiv.appendChild(titleSpan);
+            headerSpan.appendChild(titleSpan);
+
+            // إظهار أزرار التحكم فقط لمالك المنشور النصي الأصلي
+            if (isPublicMsg && isSent && messageId && serviceType === 1) {
+                const controlsDiv = document.createElement('div');
+                controlsDiv.style.cssText = "display: flex; gap: 5px;";
+
+                const editBtn = document.createElement('button');
+                editBtn.innerText = "✏️";
+                editBtn.style.cssText = "background: none; border: none; cursor: pointer; font-size: 0.8rem;";
+                editBtn.onclick = () => editPublicMessage(messageId, content);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerText = "❌";
+                deleteBtn.style.cssText = "background: none; border: none; cursor: pointer; font-size: 0.8rem;";
+                deleteBtn.onclick = () => deletePublicMessage(messageId);
+
+                controlsDiv.appendChild(editBtn);
+                controlsDiv.appendChild(deleteBtn);
+                headerSpan.appendChild(controlsDiv);
+            } else if (isPublicMsg && isSent && messageId && (serviceType === 2 || serviceType === 3)) {
+                // إظهار زر الحذف فقط للصور والأصوات
+                const controlsDiv = document.createElement('div');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerText = "❌";
+                deleteBtn.style.cssText = "background: none; border: none; cursor: pointer; font-size: 0.8rem;";
+                deleteBtn.onclick = () => deletePublicMessage(messageId);
+                controlsDiv.appendChild(deleteBtn);
+                headerSpan.appendChild(controlsDiv);
+            }
+
+            msgDiv.appendChild(headerSpan);
 
             if (serviceType === 1) {
-                const textNode = document.createTextNode(content);
-                msgDiv.appendChild(textNode);
+                const textContainer = document.createElement('span');
+                textContainer.innerText = content;
+                msgDiv.appendChild(textContainer);
             } else if (serviceType === 2) {
                 const img = document.createElement('img');
                 img.src = content;
@@ -452,8 +495,36 @@
                 msgDiv.appendChild(audio);
             }
 
-            area.appendChild(msgDiv);
+            if (!isEdit) {
+                area.appendChild(msgDiv);
+            }
             area.scrollTop = area.scrollHeight;
+        }
+
+        async function editPublicMessage(messageId, oldContent) {
+            const newContent = prompt("قم بتعديل منشورك:", oldContent);
+            if (!newContent || newContent.trim() === "" || newContent.trim() === oldContent) return;
+
+            try {
+                await db.ref(`public_messages/${messageId}`).update({
+                    content: newContent.trim(),
+                    timestamp: Date.now()
+                });
+                alert("تم تعديل المنشور بنجاح! ✨");
+            } catch (err) {
+                alert("فشل التعديل: لا تملك صلاحية تعديل هذا المنشور.");
+            }
+        }
+
+        async function deletePublicMessage(messageId) {
+            if (!confirm("هل أنت متأكد من رغبتك في حذف هذا المنشور نهائياً؟")) return;
+
+            try {
+                await db.ref(`public_messages/${messageId}`).remove();
+                alert("تم حذف المنشور بنجاح! 🗑️");
+            } catch (err) {
+                alert("فشل الحذف: لا تملك صلاحية حذف هذا المنشور.");
+            }
         }
 
         function playGame(gameType) {
@@ -462,3 +533,4 @@
     </script>
 </body>
 </html>
+ق
