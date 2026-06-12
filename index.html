@@ -89,7 +89,6 @@
                 <li class="wallet-item" id="activeWalletLabel">0x...</li>
             </ul>
             
-            <!-- ألعاب مدمجة داخل الشريط الجانبي باحترافية -->
             <div class="sidebar-games-box">
                 <label>🎮 منصة ألعاب SINU</label>
                 <button class="btn-game" onclick="playGame('luck')">🎰 لعبة الحظ (قريباً)</button>
@@ -97,7 +96,6 @@
                 <button class="btn-game" onclick="playGame('mafia')">🕵️‍♂️ سينو مافيا</button>
             </div>
             
-            <!-- تم الحفاظ على صندوق إيداع الرصيد الأصلي كاملاً -->
             <div class="sidebar-deposit-box">
                 <label>📥 شحن رصيد المراسلة (SINU)</label>
                 <input type="number" id="depositAmount" placeholder="الكمية المراد شحنها" min="1" value="100">
@@ -144,15 +142,16 @@
         const chatContractAddress = "0x690192AEeE16c40f6f7d0CA30BAA1B0884259068"; 
         const sinuTokenAddress = "0x56bB247c424958948B63de291A0C7f45d8651B76"; 
 
+        // تم تحديث الـ ABI ليتطابق مع نسختك البرمجية الذكية الأخيرة
         const chatAbi = [
             "constructor(address _sinuTokenAddress)",
             "function costImage() view returns (uint256)",
             "function costText() view returns (uint256)",
             "function costVoice() view returns (uint256)",
             "function deductForService(address _user, uint256 _serviceType)",
-            "function depositSinu(uint256 _amountWithDecimals)",
+            "function depositSinu(uint256 _amount)",
             "function getInAppBalance(address _user) view returns (uint256)",
-            "function updatePrices(uint256 _textWei, uint256 _imageWei, uint256 _voiceWei)",
+            "function updatePrices(uint256 _text, uint256 _image, uint256 _voice)",
             "function broadcastMessage(string memory _content, uint256 _type) external",
             "function getPublicMessages() view returns (string[] memory, uint256[] memory, address[] memory)"
         ];
@@ -166,9 +165,9 @@
         let inAppBalance = 0;
         let isGroupChat = true; 
 
-        let priceText = 3; 
-        let priceImage = 5;
-        let priceVoice = 10;
+        let priceText = 300; 
+        let priceImage = 500;
+        let priceVoice = 1000;
 
         let mediaRecorder;
         let audioChunks = [];
@@ -207,13 +206,15 @@
         async function refreshUserData() {
             if (!chatContract || !userAddress) return;
             try {
+                // دالة getInAppBalance ترجع رقم مخصوم منه الـ 18 صفر تلقائياً من العقد
                 const rawBalance = await chatContract.getInAppBalance(userAddress);
-                inAppBalance = parseFloat(ethers.utils.formatEther(rawBalance));
+                inAppBalance = parseInt(rawBalance.toString());
 
                 const cText = await chatContract.costText();
                 const cImage = await chatContract.costImage();
                 const cVoice = await chatContract.costVoice();
                 
+                // نقسم الأسعار العامة القادمة من العقد لنعرضها للمستخدم بشكل طبيعي (300، 500..)
                 priceText = parseFloat(ethers.utils.formatEther(cText));
                 priceImage = parseFloat(ethers.utils.formatEther(cImage));
                 priceVoice = parseFloat(ethers.utils.formatEther(cVoice));
@@ -244,11 +245,13 @@
             if(!val || parseFloat(val) <= 0) return alert("يرجى كتابة كمية شحن صالحة!");
             
             try {
+                // الـ Token يحتاج دائمًا لموافقة (Approve) بقيمة الـ Wei كاملة بالأصفار
                 const amountWei = ethers.utils.parseEther(val);
                 const approveTx = await tokenContract.approve(chatContractAddress, amountWei);
                 await approveTx.wait();
                 
-                const depositTx = await chatContract.depositSinu(amountWei);
+                // عقدك الجديد يأخذ الرقم العادي (مثل 100) ويضربه بالداخل، لذلك نرسل له الرقم الصافي
+                const depositTx = await chatContract.depositSinu(parseInt(val));
                 await depositTx.wait();
                 
                 alert("تم شحن الرصيد بنجاح! 🎉");
@@ -432,7 +435,6 @@
             area.scrollTop = area.scrollHeight;
         }
 
-        // دالة تحويل لتشغيل الألعاب
         function playGame(gameType) {
             alert(`جاري تجهيز واجهة لعبة [${gameType}] للربط مع العقد الذكي لـ SINU...`);
         }
